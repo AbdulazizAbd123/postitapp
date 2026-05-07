@@ -4,6 +4,11 @@ import { UsersData } from "../Exampledata";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
+// Define the server URL - update this with your actual server URL
+const ENV = {
+  SERVER_URL: process.env.REACT_APP_SERVER_URL || "http://localhost:5000",
+};
+
 //const initialState = { value: [] }; //list of user is an object with empty array as initial value
 //const initialState = { value: UsersData, currentUser: "Anthony" }; //list of user is an object with empty array as initial value
 const initialState = {
@@ -30,6 +35,7 @@ export const registerUser = createAsyncThunk(
       return user; //return the response from the server as payload to the thunk
     } catch (error) {
       console.log(error);
+      throw error;
     }
   }
 );
@@ -56,7 +62,11 @@ export const logout = createAsyncThunk("/users/logout", async () => {
   try {
     // Send a request to your server to log the user out
     const response = await axios.post(`${ENV.SERVER_URL}/logout`);
-  } catch (error) {}
+    return response.data;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
 });
 
 export const userSlice = createSlice({
@@ -89,10 +99,13 @@ export const userSlice = createSlice({
         state.isLoading = true;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
-        state.isLoading = true;
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.isError = false;
       })
       .addCase(registerUser.rejected, (state) => {
         state.isLoading = false;
+        state.isError = true;
       })
 
       //extra reducer for login
@@ -103,6 +116,7 @@ export const userSlice = createSlice({
         state.user = action.payload; //assign the payload which is the user object return from the server after authentication
         state.isLoading = false;
         state.isSuccess = true;
+        state.isError = false;
       })
       .addCase(login.rejected, (state) => {
         state.isLoading = false;
@@ -118,6 +132,7 @@ export const userSlice = createSlice({
         state.user = {};
         state.isLoading = false;
         state.isSuccess = false;
+        state.isError = false;
       })
       .addCase(logout.rejected, (state) => {
         state.isLoading = false;
